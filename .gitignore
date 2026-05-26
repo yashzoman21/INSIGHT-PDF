@@ -1,0 +1,82 @@
+# ==========================================
+# INSIGHT-PDF Git Ignore Rules
+# ==========================================
+
+# Dependency directories
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+dist-ssr/
+*.egg-info/
+build/
+bin/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+*.venv
+
+# Environment files and Secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+*.local
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads & Local Storage Cache
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+backend/storage/vector_store/*
+
+# Logs & Temporary Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+chrome_log.txt
+chrome_default_log.txt
+chrome_debug_log.txt
+chrome_test_log.txt
+tmp/
+temp/
+
+# Model & HuggingFace Cache
+.cache/
+.huggingface/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Thumbs.db
