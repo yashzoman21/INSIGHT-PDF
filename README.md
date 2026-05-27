@@ -32,63 +32,55 @@ InSightPDF is a premium, fully local full-stack web application that transforms 
 ## 🧠 High-Level Architecture & Data Flow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'lineColor': '#64748b', 'primaryTextColor': '#0f172a'}}}%%
 flowchart TD
-    %% Styling Definitions
-    classDef frontend fill:#2563eb,stroke:#1d4ed8,color:#ffffff,stroke-width:2px;
-    classDef backend fill:#7c3aed,stroke:#6d28d9,color:#ffffff,stroke-width:2px;
-    classDef storage fill:#059669,stroke:#047857,color:#ffffff,stroke-width:2px;
-    classDef localModel fill:#d97706,stroke:#b45309,color:#ffffff,stroke-width:2px;
+    %% Custom Styles
+    classDef ingestion fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0c4a6e,rx:8px,ry:8px
+    classDef storage fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#3b0764
+    classDef inference fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d,rx:8px,ry:8px
+    classDef ui fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#7c2d12,rx:15px,ry:15px
+    classDef model fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#831843
 
-    subgraph UserInterface["🖥️ Frontend (React & Vite)"]
-        UI_Doc[Upload PDF]
-        UI_Chat[Ask Q&A Question]
-        UI_Click[Click Citation Badge]
-        UI_Mindmap[Interactive Mind Map]
+    %% 1. Ingestion Phase
+    subgraph Phase1 ["📦 1. Ingestion Phase"]
+        direction TB
+        A([📄 Upload PDF Document]):::ui --> B[✂️ Extract Text Page-by-Page]:::ingestion
+        B --> C[🧹 Clean & Chunk Text]:::ingestion
+        C --> D[🔢 Generate Local Embeddings]:::ingestion
+        D --> E[(🗄️ FAISS Vector Index)]:::storage
     end
 
-    subgraph ServerAPI["⚙️ Backend Server (Flask)"]
-        API_Upload[PDF Ingestion & Type Detection]
-        API_Process[pdfplumber Page-by-Page Extraction]
-        API_Embedding[all-MiniLM-L6-v2 Embeddings Generator]
-        API_Query[Query Embedding Vectorizer]
-        API_RAG[RAG Retrieval & Context Compiler]
-        API_Mindmap[JSON Mind Map Endpoint]
+    %% 2. Query & Inference Phase
+    subgraph Phase2 ["🧠 2. Query & Inference Phase"]
+        direction TB
+        F([👤 User Asks Question]):::ui --> G[🔢 Convert Query to Embedding]:::inference
+        G --> H{🔍 Search FAISS Index}:::inference
+        H -->|Retrieve Top Chunks| I[📝 Compile RAG Prompt Context]:::inference
+        I -->|Query Offline LLM| J[/🤖 Local Ollama Model/]:::model
+        J -->|Cite Sources e.g. 'Page 2'| K[💡 Generate Answer]:::inference
+        
+        %% Mind Map Inference Path
+        N([🗺️ User Requests Mind Map]):::ui --> O[📝 Format Mind Map Prompt]:::inference
+        O -->|Structured Prompt| J
+        J -->|Generate JSON Tree| P[🌿 Parse Hierarchical Nodes]:::inference
     end
-
-    subgraph StorageData["💾 Local Storage & Database"]
-        DB_Meta[PostgreSQL: Users, Chats, Docs, Mindmaps]
-        FAISS_Store[FAISS Vector Index per PDF]
-    end
-
-    subgraph LocalAI["🤖 Local Offline Models (Ollama)"]
-        Ollama_LLM[mistral:latest / Local Inference]
-    end
-
-    %% Ingestion Flow
-    UI_Doc -->|1. Upload File| API_Upload
-    API_Upload -->|2. Store Metadata| DB_Meta
-    API_Upload -->|3. Extract Text| API_Process
-    API_Process -->|4. Chunk Page Text| API_Embedding
-    API_Embedding -->|5. Compute Vectors & Index| FAISS_Store
-
-    %% Chat Q&A Flow
-    UI_Chat -->|6. Send Query| API_Query
-    API_Query -->|7. Semantic Search| FAISS_Store
-    FAISS_Store -->|8. Fetch Top-4 Chunks| API_RAG
-    API_RAG -->|9. Build Context & Cite Prompts| Ollama_LLM
-    Ollama_LLM -->|10. Generate Answers with 'Page N' tags| UI_Chat
     
-    %% Citation Jump & Mind Map Flow
-    UI_Click -->|11. Trigger React key-remount| UI_Doc
-    UI_Mindmap -->|12. Request Concept Nodes| API_Mindmap
-    API_Mindmap -->|13. Build Node Prompt| Ollama_LLM
-    Ollama_LLM -->|14. Output JSON Tree| UI_Mindmap
+    %% Connect Storage to Search with a dotted line indicating data flow
+    E -.->|Similarity Match| H
 
-    %% Apply Classes
-    class UI_Doc,UI_Chat,UI_Click,UI_Mindmap frontend;
-    class API_Upload,API_Process,API_Embedding,API_Query,API_RAG,API_Mindmap backend;
-    class DB_Meta,FAISS_Store storage;
-    class Ollama_LLM localModel;
+    %% 3. Interactive UI Phase
+    subgraph Phase3 ["💻 3. Interactive UI Phase"]
+        direction TB
+        K --> L[🏷️ Render Clickable Citation Badge]:::ui
+        L -->|User Clicks Badge| M[[🎯 Auto-Scroll PDF Preview to Cited Page]]:::ui
+        
+        %% Mind Map UI Path
+        P --> Q[[🕸️ Render Interactive Markmap Viewer]]:::ui
+        Q -->|User Clicks Node| R[[💬 Auto-Explain Node in Chat]]:::ui
+    end
+
+    %% Click Mindmap Node connects back to Ask Question
+    R -.->|Send Auto-Query| F
 ```
 
 ---
