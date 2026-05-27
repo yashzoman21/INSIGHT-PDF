@@ -32,57 +32,61 @@ InSightPDF is a premium, fully local full-stack web application that transforms 
 ## 🧠 High-Level Architecture & Data Flow
 
 ```mermaid
-flowchart LR
+flowchart TD
     %% Styling Definitions
-    classDef frontend fill:#3b82f6,stroke:#1d4ed8,color:#ffffff,stroke-width:2px;
-    classDef backend fill:#8b5cf6,stroke:#6d28d9,color:#ffffff,stroke-width:2px;
-    classDef storage fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px;
-    classDef localModel fill:#f59e0b,stroke:#d97706,color:#ffffff,stroke-width:2px;
+    classDef frontend fill:#2563eb,stroke:#1d4ed8,color:#ffffff,stroke-width:2px;
+    classDef backend fill:#7c3aed,stroke:#6d28d9,color:#ffffff,stroke-width:2px;
+    classDef storage fill:#059669,stroke:#047857,color:#ffffff,stroke-width:2px;
+    classDef localModel fill:#d97706,stroke:#b45309,color:#ffffff,stroke-width:2px;
 
-    subgraph Client["🖥️ User Interface (React)"]
-        UI_Doc([Upload PDF])
-        UI_Chat([Ask Questions])
-        UI_Click([Click Citation Badge])
-        UI_Mindmap([View Mind Map])
+    subgraph UserInterface["🖥️ Frontend (React & Vite)"]
+        UI_Doc[Upload PDF]
+        UI_Chat[Ask Q&A Question]
+        UI_Click[Click Citation Badge]
+        UI_Mindmap[Interactive Mind Map]
     end
 
-    subgraph Server["⚙️ API Gateway (Flask)"]
-        API_Route{Router}
-        API_Extract[pdfplumber Extractor]
-        API_Embed[all-MiniLM-L6-v2 Encoder]
-        API_RAG[RAG Context Compiler]
+    subgraph ServerAPI["⚙️ Backend Server (Flask)"]
+        API_Upload[PDF Ingestion & Type Detection]
+        API_Process[pdfplumber Page-by-Page Extraction]
+        API_Embedding[all-MiniLM-L6-v2 Embeddings Generator]
+        API_Query[Query Embedding Vectorizer]
+        API_RAG[RAG Retrieval & Context Compiler]
+        API_Mindmap[JSON Mind Map Endpoint]
     end
 
-    subgraph Storage["💾 Databases & Filesystem"]
-        DB_Meta[(PostgreSQL DB)]
-        FAISS_Store[(FAISS Vector Store)]
+    subgraph StorageData["💾 Local Storage & Database"]
+        DB_Meta[PostgreSQL: Users, Chats, Docs, Mindmaps]
+        FAISS_Store[FAISS Vector Index per PDF]
     end
 
-    subgraph AI["🤖 Local Offline AI"]
-        Ollama_LLM[Ollama mistral:latest]
+    subgraph LocalAI["🤖 Local Offline Models (Ollama)"]
+        Ollama_LLM[mistral:latest / Local Inference]
     end
 
     %% Ingestion Flow
-    UI_Doc -->|1. Upload| API_Route
-    API_Route -->|2. Extract Pages| API_Extract
-    API_Extract -->|3. Chunk Text| API_Embed
-    API_Embed -->|4. Store Vectors| FAISS_Store
-    API_Route -->|5. Save Meta| DB_Meta
+    UI_Doc -->|1. Upload File| API_Upload
+    API_Upload -->|2. Store Metadata| DB_Meta
+    API_Upload -->|3. Extract Text| API_Process
+    API_Process -->|4. Chunk Page Text| API_Embedding
+    API_Embedding -->|5. Compute Vectors & Index| FAISS_Store
 
-    %% RAG Q&A Flow
-    UI_Chat -->|6. Query| API_RAG
-    API_RAG -->|7. Vector Query| FAISS_Store
-    FAISS_Store -->|8. Fetch Context| API_RAG
-    API_RAG -->|9. Prompt| Ollama_LLM
-    Ollama_LLM -->|10. Answer with Citations| UI_Chat
-
+    %% Chat Q&A Flow
+    UI_Chat -->|6. Send Query| API_Query
+    API_Query -->|7. Semantic Search| FAISS_Store
+    FAISS_Store -->|8. Fetch Top-4 Chunks| API_RAG
+    API_RAG -->|9. Build Context & Cite Prompts| Ollama_LLM
+    Ollama_LLM -->|10. Generate Answers with [Page N] tags| UI_Chat
+    
     %% Citation Jump & Mind Map Flow
-    UI_Click -->|11. Page Jump| UI_Doc
-    UI_Mindmap -->|12. Build Mindmap| Ollama_LLM
-    Ollama_LLM -->|13. Render Tree Nodes| UI_Mindmap
+    UI_Click -->|11. Trigger React key-remount| UI_Doc
+    UI_Mindmap -->|12. Request Concept Nodes| API_Mindmap
+    API_Mindmap -->|13. Build Node Prompt| Ollama_LLM
+    Ollama_LLM -->|14. Output JSON Tree| UI_Mindmap
 
+    %% Apply Classes
     class UI_Doc,UI_Chat,UI_Click,UI_Mindmap frontend;
-    class API_Route,API_Extract,API_Embed,API_RAG backend;
+    class API_Upload,API_Process,API_Embedding,API_Query,API_RAG,API_Mindmap backend;
     class DB_Meta,FAISS_Store storage;
     class Ollama_LLM localModel;
 ```
