@@ -76,7 +76,7 @@ flowchart TD
     API_Query -->|7. Semantic Search| FAISS_Store
     FAISS_Store -->|8. Fetch Top-4 Chunks| API_RAG
     API_RAG -->|9. Build Context & Cite Prompts| Ollama_LLM
-    Ollama_LLM -->|10. Generate Answers with [Page N] tags| UI_Chat
+    Ollama_LLM -->|10. Generate Answers with 'Page N' tags| UI_Chat
     
     %% Citation Jump & Mind Map Flow
     UI_Click -->|11. Trigger React key-remount| UI_Doc
