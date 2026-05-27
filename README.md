@@ -32,16 +32,59 @@ InSightPDF is a premium, fully local full-stack web application that transforms 
 ## 🧠 High-Level Architecture & Data Flow
 
 ```mermaid
-graph TD
-    A[Upload PDF] --> B[pdfplumber Page-by-Page Extraction]
-    B --> C[Text Cleaning & Token Chunking]
-    C --> D[sentence-transformers: all-MiniLM-L6-v2 Embeddings]
-    D --> E[FAISS Vector Store per Document]
-    F[User Query] --> G[Ollama Query Encoder]
-    G --> H[FAISS Semantic Search / Top-K Retrieval]
-    H --> I[Local Ollama LLM: mistral:latest]
-    I --> J[JSON Mind Map / Chat / Summaries]
-    J --> K[React Frontend: Clickable Citations & Markmap Viewer]
+flowchart LR
+    %% Styling Definitions
+    classDef frontend fill:#3b82f6,stroke:#1d4ed8,color:#ffffff,stroke-width:2px;
+    classDef backend fill:#8b5cf6,stroke:#6d28d9,color:#ffffff,stroke-width:2px;
+    classDef storage fill:#10b981,stroke:#047857,color:#ffffff,stroke-width:2px;
+    classDef localModel fill:#f59e0b,stroke:#d97706,color:#ffffff,stroke-width:2px;
+
+    subgraph Client["🖥️ User Interface (React)"]
+        UI_Doc([Upload PDF])
+        UI_Chat([Ask Questions])
+        UI_Click([Click Citation Badge])
+        UI_Mindmap([View Mind Map])
+    end
+
+    subgraph Server["⚙️ API Gateway (Flask)"]
+        API_Route{Router}
+        API_Extract[pdfplumber Extractor]
+        API_Embed[all-MiniLM-L6-v2 Encoder]
+        API_RAG[RAG Context Compiler]
+    end
+
+    subgraph Storage["💾 Databases & Filesystem"]
+        DB_Meta[(PostgreSQL DB)]
+        FAISS_Store[(FAISS Vector Store)]
+    end
+
+    subgraph AI["🤖 Local Offline AI"]
+        Ollama_LLM[Ollama mistral:latest]
+    end
+
+    %% Ingestion Flow
+    UI_Doc -->|1. Upload| API_Route
+    API_Route -->|2. Extract Pages| API_Extract
+    API_Extract -->|3. Chunk Text| API_Embed
+    API_Embed -->|4. Store Vectors| FAISS_Store
+    API_Route -->|5. Save Meta| DB_Meta
+
+    %% RAG Q&A Flow
+    UI_Chat -->|6. Query| API_RAG
+    API_RAG -->|7. Vector Query| FAISS_Store
+    FAISS_Store -->|8. Fetch Context| API_RAG
+    API_RAG -->|9. Prompt| Ollama_LLM
+    Ollama_LLM -->|10. Answer with Citations| UI_Chat
+
+    %% Citation Jump & Mind Map Flow
+    UI_Click -->|11. Page Jump| UI_Doc
+    UI_Mindmap -->|12. Build Mindmap| Ollama_LLM
+    Ollama_LLM -->|13. Render Tree Nodes| UI_Mindmap
+
+    class UI_Doc,UI_Chat,UI_Click,UI_Mindmap frontend;
+    class API_Route,API_Extract,API_Embed,API_RAG backend;
+    class DB_Meta,FAISS_Store storage;
+    class Ollama_LLM localModel;
 ```
 
 ---
